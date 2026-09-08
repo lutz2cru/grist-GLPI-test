@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Portail Adhérent - Helpdesk</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+</head>
+<body>
+
+  <!-- Notifications -->
+  <div id="toast-container"></div>
+
+  <!-- Connexion -->
+  <div id="view-login" class="login-container">
+    <h2>Portail Assistance</h2>
+    <p>Renseignez votre adresse email adhérent pour accéder à votre espace.</p>
+    <label>Adresse email <input type="email" id="login-email" placeholder="nom@structure.fr" required></label>
+    <button class="btn btn-primary" id="btn-login" style="width: 100%;">Accéder au portail</button>
+    <div id="login-error-msg" class="login-error">Adresse introuvable.</div>
+  </div>
+
+  <!-- Contenu Principal -->
+  <div id="app-content" class="hidden">
+    <div class="top-bar">
+      <div class="nav-tabs">
+        <button class="tab-btn active" data-target="view-list">Mes demandes</button>
+        <button class="tab-btn" data-target="view-create">+ Nouvelle demande</button>
+        <button class="tab-btn" data-target="view-profile">Mon profil</button>
+      </div>
+      <div class="user-area">
+        <div class="user-badge"><span class="user-dot"></span><span id="user-header-text">—</span></div>
+        <button class="btn-logout" id="btn-logout">Déconnexion</button>
+      </div>
+    </div>
+
+    <!-- VUE 1 : Historique & Echanges -->
+    <div id="view-list" class="grid-container">
+      <div class="card" id="tickets-container">
+        <input type="text" id="search-input" placeholder="Rechercher un ticket..." style="margin-bottom: 0;">
+        <div class="filter-bar">
+          <button class="filter-chip active-filter" data-filter="Tous">Tous</button>
+          <button class="filter-chip" data-filter="Actifs">En cours</button>
+          <button class="filter-chip" data-filter="Clos">Historique</button>
+        </div>
+        <div id="tickets-list">Chargement...</div>
+      </div>
+
+      <div class="card" id="detail-container">
+        <div id="no-selection" style="margin: auto; color: var(--text-muted);">Sélectionnez un ticket pour voir les détails</div>
+        <div id="selection-content" class="hidden" style="display: flex; flex-direction: column; height: 100%;">
+          <div style="border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <h2 id="current-title" style="font-size: 1.2rem;"></h2>
+              <span id="current-date" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+            </div>
+            <div id="current-meta" style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
+            <div id="current-desc" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem; line-height: 1.5;"></div>
+          </div>
+          
+          <div class="timeline" id="timeline"></div>
+
+          <!-- Actions dynamiques -->
+          <div id="action-reply" style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <textarea id="reply-text" placeholder="Ajouter une précision ou répondre..." rows="2" style="margin: 0;"></textarea>
+            <button class="btn btn-primary" id="btn-reply">Répondre</button>
+          </div>
+
+          <div id="action-resolve" class="action-box hidden">
+            <h4 style="margin-bottom: 0.5rem; color: #166534;">Solution proposée</h4>
+            <p style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-muted);">Le support technique a indiqué que votre problème est résolu. Confirmez-vous ?</p>
+            <div style="display: flex; justify-content: center; gap: 1rem;">
+              <button class="btn btn-success" id="btn-accept">Accepter et clore</button>
+              <button class="btn btn-danger" id="btn-reject">Le problème persiste</button>
+            </div>
+          </div>
+
+          <div id="action-satisfaction" class="satisfaction-box hidden">
+            <h4 style="margin-bottom: 0.25rem;">Votre avis compte !</h4>
+            <p style="font-size: 0.85rem; color: #92400e; margin-bottom: 0.5rem;">Comment évaluez-vous la résolution de ce ticket ?</p>
+            <div class="star-rating" id="star-container">
+              <span class="star" data-val="1">★</span><span class="star" data-val="2">★</span>
+              <span class="star" data-val="3">★</span><span class="star" data-val="4">★</span><span class="star" data-val="5">★</span>
+            </div>
+            <textarea id="satisfaction-comment" placeholder="Un petit commentaire ? (Optionnel)" rows="2"></textarea>
+            <button class="btn btn-primary" id="btn-submit-satisfaction">Envoyer mon avis</button>
+          </div>
+
+          <div id="action-satisfaction-readonly" class="action-box hidden" style="background: #f8fafc;">
+            <p style="font-size: 0.9rem; margin-bottom: 0.25rem;"><strong>Note attribuée :</strong> <span id="readonly-stars" style="color: #f59e0b; font-size: 1.2rem;"></span></p>
+            <p id="readonly-comment" style="font-size: 0.85rem; font-style: italic; color: var(--text-muted);"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VUE 2 : Création -->
+    <div id="view-create" class="card hidden" style="max-width: 650px; margin: auto;">
+      <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">Ouvrir un nouveau ticket</h2>
+      <div class="form-grid">
+        <label>Type <select id="new-type"><option>Incident technique</option><option>Demande de service</option></select></label>
+        <label>Priorité <select id="new-priority"><option>Basse</option><option selected>Normale</option><option>Haute</option><option>Critique</option></select></label>
+        <label>Catégorie <select id="new-category"><option>Matériel</option><option>Logiciel</option><option>Réseau</option><option>Identifiants/Accès</option></select></label>
+        <label>Matériel concerné <select id="new-materiel"><option value="">-- Aucun --</option></select></label>
+      </div>
+      <label style="margin-top: 0.5rem;">Titre court <input type="text" id="new-title" required></label>
+      <label>Description détaillée <textarea id="new-desc" rows="5" required></textarea></label>
+      <label>Capture d'écran (Optionnel - Max 2Mo) <input type="file" id="new-file" accept="image/png, image/jpeg, image/jpg"></label>
+      <button class="btn btn-primary" id="btn-create-ticket" style="margin-top: 0.5rem;">Soumettre la demande</button>
+    </div>
+
+    <!-- VUE 3 : Profil -->
+    <div id="view-profile" class="card hidden" style="max-width: 500px; margin: auto;">
+      <h2 style="margin-bottom: 1.2rem; font-size: 1.2rem;">Fiche Adhérent</h2>
+      <div class="profile-field"><div class="profile-label">Nom complet</div><div class="profile-value" id="profile-nom"></div></div>
+      <div class="profile-field"><div class="profile-label">Organisation</div><div class="profile-value" id="profile-org"></div></div>
+      <div class="profile-field"><div class="profile-label">Adresse email</div><div class="profile-value" id="profile-email"></div></div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -6,31 +6,25 @@ const AppState = {
   selectedTicketId: null, currentSelectedRating: 0
 };
 
-// 1. On attache les boutons IMMÉDIATEMENT pour que l'interface réponde
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
-  UI.showLogin(); // Affiche la page de connexion par défaut
+  UI.showLogin();
 });
 
-// 2. On déclare à Grist qu'on a besoin des droits complets
+// Initialisation de Grist
 grist.ready({ requiredAccess: 'full' });
 
-// 3. On attend le feu vert OFFICIEL de Grist pour lancer le moteur
-let isInitialized = false;
-grist.onRecord(async () => {
-  if (!isInitialized) {
-    isInitialized = true;
-    try {
-      const isLoggedIn = await Auth.init();
-      if (isLoggedIn) {
-        await postLoginSetup();
-      }
-    } catch (error) {
-      console.error("Erreur critique d'initialisation :", error);
-      UI.showToast("Erreur de connexion à Grist", "error");
+// On n'attend plus onRecord, on lance dès que possible
+setTimeout(async () => {
+  try {
+    const isLoggedIn = await Auth.init();
+    if (isLoggedIn) {
+      await postLoginSetup();
     }
+  } catch (error) {
+    console.error("Erreur d'initialisation :", error);
   }
-});
+}, 500);
 
 async function postLoginSetup() {
   UI.showLoginError(false);
@@ -46,7 +40,6 @@ async function loadData() {
     ]);
     
     AppState.echanges = rawE; AppState.materiels = rawM;
-    
     const adherentId = Auth.currentAdherent ? Auth.currentAdherent.id : null;
     AppState.tickets = rawT.filter(t => adherentId && t.Demandeur === adherentId);
     AppState.tickets.sort((a, b) => new Date(b.Date_Creation || 0) - new Date(a.Date_Creation || 0));
@@ -55,8 +48,7 @@ async function loadData() {
     refreshTicketList();
     if (AppState.selectedTicketId) selectTicket(AppState.selectedTicketId);
   } catch (err) {
-    console.error("Erreur de chargement des données :", err);
-    UI.showToast("Erreur de synchronisation", "error");
+    UI.showToast("Erreur de synchronisation des données", "error");
   }
 }
 
@@ -85,10 +77,11 @@ function selectTicket(id) {
   UI.renderConversation(ticketEchanges, Auth.userEmail);
 }
 
-// --- ACTIONS CLICS ---
 async function handleLogin() {
   const emailInput = document.getElementById('login-email').value;
   const btn = document.getElementById('btn-login');
+  const errorMsg = document.getElementById('login-error-msg');
+  
   btn.textContent = "Vérification..."; 
   
   try {
@@ -97,11 +90,13 @@ async function handleLogin() {
       UI.showToast("Connexion réussie", "success");
       await postLoginSetup();
     } else {
+      errorMsg.textContent = "Adresse introuvable dans la base adhérents.";
       UI.showLoginError(true);
     }
   } catch (e) {
-    console.error("Erreur de login", e);
-    UI.showToast("Impossible de joindre la base Grist", "error");
+    // AFFICHE L'ERREUR EXACTE A L'ECRAN POUR NOUS AIDER A DEBOGUER
+    errorMsg.textContent = "Erreur de base de données : " + e.message;
+    UI.showLoginError(true);
   } finally {
     btn.textContent = "Accéder au portail";
   }
@@ -124,7 +119,7 @@ async function handleCreateTicket() {
         reader.onerror = error => reject(error);
         reader.readAsDataURL(file);
       });
-    } catch (e) { return UI.showToast("Erreur lors de la lecture de l'image.", "error"); }
+    } catch (e) { return UI.showToast("Erreur lecture d'image.", "error"); }
   }
 
   const matVal = document.getElementById('new-materiel').value;
@@ -135,8 +130,7 @@ async function handleCreateTicket() {
   });
   
   document.getElementById('new-title').value = ''; document.getElementById('new-desc').value = ''; 
-  if (fileInput) fileInput.value = '';
-  
+  if(fileInput) fileInput.value = '';
   UI.showToast("Ticket créé avec succès", "success");
   UI.switchView('view-list'); 
   await loadData();
@@ -158,7 +152,7 @@ async function handleAcceptSolution() {
 }
 
 async function handleRejectSolution() {
-  const reason = prompt("Veuillez expliquer pourquoi la solution ne convient pas :");
+  const reason = prompt("Pourquoi la solution ne convient-elle pas ?");
   if (!reason) return;
   await API.updateTicket(AppState.selectedTicketId, { Statut: 'En cours' });
   await handleReply(`❌ L'adhérent a refusé la solution. Motif : ${reason}`);
@@ -174,22 +168,16 @@ async function handleSubmitSatisfaction() {
 
 function setupEventListeners() {
   document.getElementById('btn-login').addEventListener('click', handleLogin);
-  
-  document.getElementById('login-email').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleLogin();
-  });
-
+  document.getElementById('login-email').addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
   document.getElementById('btn-logout').addEventListener('click', () => { Auth.logout(); location.reload(); });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => UI.switchView(e.target.dataset.target));
   });
-
   document.getElementById('search-input').addEventListener('keyup', (e) => {
     AppState.searchQuery = e.target.value.trim().toLowerCase();
     refreshTicketList();
   });
-  
   document.querySelectorAll('.filter-chip').forEach(btn => {
     btn.addEventListener('click', (e) => {
       AppState.currentFilter = e.target.dataset.filter;

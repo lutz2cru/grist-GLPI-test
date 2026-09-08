@@ -260,6 +260,16 @@ function setupEventListeners() {
   document.getElementById('btn-accept')?.addEventListener('click', handleAcceptSolution);
   document.getElementById('btn-reject')?.addEventListener('click', handleRejectSolution);
   
+  // ---> C'est ici qu'il faut l'ajouter : <---
+  document.getElementById('btn-admin-save-status')?.addEventListener('click', async () => {
+    const newStatus = document.getElementById('admin-status-select').value;
+    if (!AppState.selectedTicketId) return;
+    
+    await API.updateTicket(AppState.selectedTicketId, { Statut: newStatus });
+    UI.showToast(`Statut mis à jour : ${newStatus}`, "success");
+    await loadData();
+  });
+
   document.querySelectorAll('#star-container .star').forEach(star => {
     star.addEventListener('click', (e) => {
       AppState.currentSelectedRating = parseInt(e.target.dataset.rating);

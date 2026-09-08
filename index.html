@@ -83,15 +83,6 @@
 
   <div id="toast-container"></div>
 
-  <!-- Ecran de Connexion -->
-  <div id="view-login" class="login-container">
-    <h2>Portail Assistance</h2>
-    <p>Renseignez votre adresse email adhérent pour accéder à votre espace.</p>
-    <label>Adresse email <input type="email" id="login-email" placeholder="nom@structure.fr" required></label>
-    <button class="btn btn-primary" style="width: 100%;" onclick="submitLogin()">Accéder au portail</button>
-    <div id="login-error-msg" class="login-error">Adresse introuvable.</div>
-  </div>
-
   <!-- Application Principale -->
   <div id="app-content" class="hidden">
     <div class="top-bar">
@@ -188,6 +179,22 @@
       <div style="margin-bottom: 1rem;"><div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Adresse email</div><div id="profile-email" style="font-size: 1rem; font-weight: 500;"></div></div>
     </div>
   </div>
+
+  <!-- Panneau de contrôle Admin -->
+<div id="action-admin-panel" class="action-box hidden" style="background: #eff6ff; border-color: #bfdbfe;">
+  <h4 style="margin-bottom: 0.5rem; color: #1e40af;">Administration du ticket</h4>
+  <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <label style="flex: 1; margin: 0; font-size: 0.85rem;">Changer le statut :
+      <select id="admin-status-select" style="margin-top: 0.2rem;">
+        <option value="Nouveau">Nouveau</option>
+        <option value="En cours">En cours</option>
+        <option value="Résolu">Résolu</option>
+        <option value="Clos">Clos</option>
+      </select>
+    </label>
+    <button class="btn btn-primary" id="btn-admin-save-status" style="margin-top: 1.2rem;">Mettre à jour</button>
+  </div>
+</div>
 
   <script>
     let userEmail = "", currentAdherent = null, selectedTicketId = null;

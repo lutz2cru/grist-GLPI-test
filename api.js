@@ -44,9 +44,15 @@ const API = {
     }
   },
 
-  async getCurrentUser() {
+  // Remplace juste cette fonction dans js/api.js
+async getCurrentUser() {
+  try {
     return await grist.docApi.getUser();
-  },
+  } catch (e) {
+    console.warn("Impossible de récupérer l'utilisateur Grist, mode public assumé.");
+    return null;
+  }
+},
 
   // --- ÉCRITURE DES DONNÉES ---
   async createTicket(ticketData) {

@@ -6,29 +6,31 @@ const AppState = {
   selectedTicketId: null, currentSelectedRating: 0
 };
 
-// 1. On attache les boutons dès que la page est lue (même si Grist charge encore)
+// 1. On attache les boutons IMMÉDIATEMENT pour que l'interface réponde
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
+  UI.showLogin(); // Affiche la page de connexion par défaut
 });
 
-// 2. On initialise l'API Grist
+// 2. On déclare à Grist qu'on a besoin des droits complets
 grist.ready({ requiredAccess: 'full' });
 
-// 3. On lance l'application sans attendre la sélection d'une ligne
-setTimeout(async () => {
-  try {
-    const isLoggedIn = await Auth.init();
-    if (isLoggedIn) {
-      await postLoginSetup();
-    } else {
-      UI.showLogin();
+// 3. On attend le feu vert OFFICIEL de Grist pour lancer le moteur
+let isInitialized = false;
+grist.onRecord(async () => {
+  if (!isInitialized) {
+    isInitialized = true;
+    try {
+      const isLoggedIn = await Auth.init();
+      if (isLoggedIn) {
+        await postLoginSetup();
+      }
+    } catch (error) {
+      console.error("Erreur critique d'initialisation :", error);
+      UI.showToast("Erreur de connexion à Grist", "error");
     }
-  } catch (error) {
-    console.error("Erreur critique d'initialisation :", error);
-    UI.showToast("Erreur de connexion à la base de données", "error");
-    UI.showLogin();
   }
-}, 300); 
+});
 
 async function postLoginSetup() {
   UI.showLoginError(false);
@@ -83,9 +85,11 @@ function selectTicket(id) {
   UI.renderConversation(ticketEchanges, Auth.userEmail);
 }
 
+// --- ACTIONS CLICS ---
 async function handleLogin() {
   const emailInput = document.getElementById('login-email').value;
-  document.getElementById('btn-login').textContent = "Connexion..."; // Retour visuel
+  const btn = document.getElementById('btn-login');
+  btn.textContent = "Vérification..."; 
   
   try {
     const success = await Auth.login(emailInput);
@@ -97,13 +101,12 @@ async function handleLogin() {
     }
   } catch (e) {
     console.error("Erreur de login", e);
-    UI.showToast("Erreur lors de la connexion", "error");
+    UI.showToast("Impossible de joindre la base Grist", "error");
   } finally {
-    document.getElementById('btn-login').textContent = "Accéder au portail";
+    btn.textContent = "Accéder au portail";
   }
 }
 
-// ... Les autres fonctions (handleCreateTicket, handleReply, handleAcceptSolution, etc.) restent identiques ...
 async function handleCreateTicket() {
   const title = document.getElementById('new-title').value.trim();
   if (!title) return UI.showToast("Veuillez saisir un titre.", "error");
@@ -111,7 +114,7 @@ async function handleCreateTicket() {
   const fileInput = document.getElementById('new-file');
   let base64String = "";
 
-  if (fileInput.files.length > 0) {
+  if (fileInput && fileInput.files.length > 0) {
     const file = fileInput.files[0];
     if (file.size > 2000000) return UI.showToast("L'image est trop lourde (Max 2 Mo).", "error");
     try {
@@ -131,7 +134,9 @@ async function handleCreateTicket() {
     Priorite: document.getElementById('new-priority').value, Materiel_Concerne: matVal ? parseInt(matVal) : null, Image_Base64: base64String
   });
   
-  document.getElementById('new-title').value = ''; document.getElementById('new-desc').value = ''; document.getElementById('new-file').value = '';
+  document.getElementById('new-title').value = ''; document.getElementById('new-desc').value = ''; 
+  if (fileInput) fileInput.value = '';
+  
   UI.showToast("Ticket créé avec succès", "success");
   UI.switchView('view-list'); 
   await loadData();
@@ -168,10 +173,8 @@ async function handleSubmitSatisfaction() {
 }
 
 function setupEventListeners() {
-  // Clic sur bouton Login
   document.getElementById('btn-login').addEventListener('click', handleLogin);
   
-  // Validation Login avec la touche "Entrée"
   document.getElementById('login-email').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleLogin();
   });

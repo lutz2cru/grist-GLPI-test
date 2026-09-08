@@ -62,7 +62,7 @@ formatDate(val) {
     if (targetView) targetView.classList.remove('hidden');
   },
 
-  renderProfile(email, adherent) {
+renderProfile(email, adherent, isAdmin) {
     const nom = adherent ? (adherent.Nom || email) : email;
     const org = adherent ? (adherent['Organisation / Structure'] || adherent.Organisation___Structure || '') : '';
     
@@ -71,7 +71,13 @@ formatDate(val) {
     const profOrg = document.getElementById('profile-org');
     const profEmail = document.getElementById('profile-email');
 
-    if (headerText) headerText.textContent = org ? `${nom} (${org})` : nom;
+    if (headerText) {
+      let text = org ? `${nom} (${org})` : nom;
+      if (isAdmin) {
+        text += ` <span class="badge" style="background:#dc2626; color:white; margin-left:8px; vertical-align:middle;">Admin</span>`;
+      }
+      headerText.innerHTML = text;
+    }
     if (profNom) profNom.textContent = nom;
     if (profOrg) profOrg.textContent = org || 'Non renseignée';
     if (profEmail) profEmail.textContent = email;

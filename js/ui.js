@@ -3,10 +3,20 @@
 export const UI = {
 formatDate(val) {
     if (!val) return '';
-    // Grist stocke souvent les dates en secondes (nombre), JS a besoin de millisecondes (*1000)
-    const d = typeof val === 'number' ? new Date(val * 1000) : new Date(val);
+    let d;
+    if (typeof val === 'number') {
+      d = new Date(val > 1e12 ? val : val * 1000);
+    } else {
+      let strVal = String(val);
+      if (strVal.includes(' ') && !strVal.includes('T')) {
+        strVal = strVal.replace(' ', 'T');
+      }
+      d = new Date(strVal);
+    }
+    
     if (isNaN(d.getTime())) return '';
-    return d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+    return d.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' }) + ' à ' + 
+           d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
   },
 
   showToast(message, type = "info") {

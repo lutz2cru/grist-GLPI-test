@@ -3,45 +3,117 @@
 <head>
   <meta charset="UTF-8">
   <title>Portail Adhérent - Helpdesk</title>
-  <link rel="stylesheet" href="css/style.css">
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb; --primary-hover: #1d4ed8;
+      --success: #16a34a; --danger: #dc2626;
+      --bg: #f8fafc; --card-bg: #ffffff;
+      --border: #e2e8f0; --text: #0f172a; --text-muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 1.5rem; min-height: 100vh; position: relative; }
+    
+    .login-container { max-width: 400px; margin: 5rem auto; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .login-container h2 { font-size: 1.3rem; margin-bottom: 0.5rem; }
+    .login-container p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+    .login-error { color: var(--danger); font-size: 0.85rem; margin-top: 0.5rem; display: none; }
+
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+    .nav-tabs { display: flex; gap: 0.5rem; }
+    .tab-btn { background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; font-size: 0.95rem; font-weight: 500; border-radius: 6px; color: var(--text-muted); transition: 0.2s; }
+    .tab-btn:hover { background-color: #f1f5f9; }
+    .tab-btn.active { background-color: #e0e7ff; color: var(--primary); }
+
+    .user-area { display: flex; align-items: center; gap: 0.75rem; }
+    .user-badge { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; background: #ffffff; border: 1px solid var(--border); padding: 0.4rem 0.8rem; border-radius: 20px; }
+    .user-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; }
+    .btn-logout { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; text-decoration: underline; }
+
+    .grid-container { display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem; height: calc(100vh - 120px); }
+    .card { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; }
+    
+    .ticket-card { padding: 0.75rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; border-radius: 4px; }
+    .ticket-card:hover { background-color: #f1f5f9; }
+    .ticket-card.selected { background-color: #eff6ff; border-left: 3px solid var(--primary); }
+    
+    .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .badge-Nouveau { background: #dbeafe; color: #1e40af; }
+    .badge-En-cours { background: #fef3c7; color: #92400e; }
+    .badge-Résolu { background: #dcfce7; color: #166534; }
+    .badge-Clos { background: #f1f5f9; color: #475569; }
+    .badge-gray { background: #f1f5f9; color: #475569; font-weight: 500; }
+
+    .filter-bar { display: flex; gap: 0.5rem; margin-top: 0.5rem; margin-bottom: 1rem; }
+    .filter-chip { font-size: 0.8rem; padding: 0.3rem 0.75rem; border-radius: 20px; border: 1px solid var(--border); cursor: pointer; background: white; color: var(--text-muted); transition: 0.2s;}
+    .filter-chip.active-filter { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .timeline { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem; padding-right: 0.5rem; }
+    .message { padding: 0.75rem; border-radius: 6px; max-width: 85%; font-size: 0.9rem; line-height: 1.4; }
+    .message.mine { align-self: flex-end; background-color: #eff6ff; border: 1px solid #bfdbfe; }
+    .message.support { align-self: flex-start; background-color: #f1f5f9; border: 1px solid var(--border); }
+    .meta { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; font-weight: 500; }
+
+    input, textarea, select { width: 100%; padding: 0.5rem; margin-top: 0.25rem; margin-bottom: 0.75rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9rem; font-family: inherit;}
+    input[type="file"] { padding: 0; border: none; margin-bottom: 1rem; font-size: 0.85rem; }
+    
+    button.btn { padding: 0.5rem 1rem; border-radius: 4px; font-weight: 500; cursor: pointer; border: none; color: white; transition: 0.2s; }
+    button.btn-primary { background: var(--primary); }
+    button.btn-primary:hover { background: var(--primary-hover); }
+    button.btn-success { background: var(--success); }
+    button.btn-danger { background: var(--danger); }
+    
+    .star-rating { display: flex; gap: 0.25rem; font-size: 1.5rem; cursor: pointer; color: #cbd5e1; margin-bottom: 0.5rem; }
+    .star-rating .star:hover, .star-rating .star.active { color: #f59e0b; }
+    .satisfaction-box { background: #fef3c7; border: 1px solid #fde68a; padding: 1rem; border-radius: 6px; margin-top: 0.5rem; }
+    .action-box { background: #f1f5f9; padding: 1rem; border-radius: 6px; text-align: center; border: 1px solid var(--border); margin-top: 0.5rem; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+    .hidden { display: none !important; }
+
+    /* Toast Notifications */
+    #toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
+    .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 6px; font-size: 0.9rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); opacity: 0; transform: translateY(20px); transition: opacity 0.3s, transform 0.3s; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: var(--danger); }
+    .toast.success { background: var(--success); }
+  </style>
 </head>
 <body>
 
-  <!-- Notifications -->
   <div id="toast-container"></div>
 
-  <!-- Connexion -->
+  <!-- Ecran de Connexion -->
   <div id="view-login" class="login-container">
     <h2>Portail Assistance</h2>
     <p>Renseignez votre adresse email adhérent pour accéder à votre espace.</p>
     <label>Adresse email <input type="email" id="login-email" placeholder="nom@structure.fr" required></label>
-    <button class="btn btn-primary" id="btn-login" style="width: 100%;">Accéder au portail</button>
+    <button class="btn btn-primary" style="width: 100%;" onclick="submitLogin()">Accéder au portail</button>
     <div id="login-error-msg" class="login-error">Adresse introuvable.</div>
   </div>
 
-  <!-- Contenu Principal -->
+  <!-- Application Principale -->
   <div id="app-content" class="hidden">
     <div class="top-bar">
       <div class="nav-tabs">
-        <button class="tab-btn active" data-target="view-list">Mes demandes</button>
-        <button class="tab-btn" data-target="view-create">+ Nouvelle demande</button>
-        <button class="tab-btn" data-target="view-profile">Mon profil</button>
+        <button class="tab-btn active" onclick="switchView('list')">Mes demandes</button>
+        <button class="tab-btn" onclick="switchView('create')">+ Nouvelle demande</button>
+        <button class="tab-btn" onclick="switchView('profile')">Mon profil</button>
       </div>
       <div class="user-area">
         <div class="user-badge"><span class="user-dot"></span><span id="user-header-text">—</span></div>
-        <button class="btn-logout" id="btn-logout">Déconnexion</button>
+        <button class="btn-logout" onclick="logout()">Déconnexion</button>
       </div>
     </div>
 
-    <!-- VUE 1 : Historique & Echanges -->
+    <!-- VUE 1 : Liste & Echanges -->
     <div id="view-list" class="grid-container">
       <div class="card" id="tickets-container">
-        <input type="text" id="search-input" placeholder="Rechercher un ticket..." style="margin-bottom: 0;">
+        <input type="text" id="search-input" placeholder="Rechercher un ticket..." onkeyup="handleSearch()" style="margin-bottom: 0;">
         <div class="filter-bar">
-          <button class="filter-chip active-filter" data-filter="Tous">Tous</button>
-          <button class="filter-chip" data-filter="Actifs">En cours</button>
-          <button class="filter-chip" data-filter="Clos">Historique</button>
+          <button class="filter-chip active-filter" onclick="setFilter('Tous', this)">Tous</button>
+          <button class="filter-chip" onclick="setFilter('Actifs', this)">En cours</button>
+          <button class="filter-chip" onclick="setFilter('Clos', this)">Historique</button>
         </div>
         <div id="tickets-list">Chargement...</div>
       </div>
@@ -60,18 +132,17 @@
           
           <div class="timeline" id="timeline"></div>
 
-          <!-- Actions dynamiques -->
           <div id="action-reply" style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
             <textarea id="reply-text" placeholder="Ajouter une précision ou répondre..." rows="2" style="margin: 0;"></textarea>
-            <button class="btn btn-primary" id="btn-reply">Répondre</button>
+            <button class="btn btn-primary" onclick="sendReply()">Répondre</button>
           </div>
 
           <div id="action-resolve" class="action-box hidden">
             <h4 style="margin-bottom: 0.5rem; color: #166534;">Solution proposée</h4>
             <p style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-muted);">Le support technique a indiqué que votre problème est résolu. Confirmez-vous ?</p>
             <div style="display: flex; justify-content: center; gap: 1rem;">
-              <button class="btn btn-success" id="btn-accept">Accepter et clore</button>
-              <button class="btn btn-danger" id="btn-reject">Le problème persiste</button>
+              <button class="btn btn-success" onclick="acceptSolution()">Accepter et clore le ticket</button>
+              <button class="btn btn-danger" onclick="rejectSolution()">Le problème persiste</button>
             </div>
           </div>
 
@@ -79,11 +150,11 @@
             <h4 style="margin-bottom: 0.25rem;">Votre avis compte !</h4>
             <p style="font-size: 0.85rem; color: #92400e; margin-bottom: 0.5rem;">Comment évaluez-vous la résolution de ce ticket ?</p>
             <div class="star-rating" id="star-container">
-              <span class="star" data-val="1">★</span><span class="star" data-val="2">★</span>
-              <span class="star" data-val="3">★</span><span class="star" data-val="4">★</span><span class="star" data-val="5">★</span>
+              <span class="star" onclick="setRating(1)">★</span><span class="star" onclick="setRating(2)">★</span>
+              <span class="star" onclick="setRating(3)">★</span><span class="star" onclick="setRating(4)">★</span><span class="star" onclick="setRating(5)">★</span>
             </div>
             <textarea id="satisfaction-comment" placeholder="Un petit commentaire ? (Optionnel)" rows="2"></textarea>
-            <button class="btn btn-primary" id="btn-submit-satisfaction">Envoyer mon avis</button>
+            <button class="btn btn-primary" onclick="submitSatisfaction()">Envoyer mon avis</button>
           </div>
 
           <div id="action-satisfaction-readonly" class="action-box hidden" style="background: #f8fafc;">
@@ -98,29 +169,296 @@
     <div id="view-create" class="card hidden" style="max-width: 650px; margin: auto;">
       <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">Ouvrir un nouveau ticket</h2>
       <div class="form-grid">
-        <label>Type <select id="new-type"><option>Incident technique</option><option>Demande de service</option></select></label>
+        <label>Type de demande <select id="new-type"><option>Incident technique</option><option>Demande de service</option></select></label>
         <label>Priorité <select id="new-priority"><option>Basse</option><option selected>Normale</option><option>Haute</option><option>Critique</option></select></label>
         <label>Catégorie <select id="new-category"><option>Matériel</option><option>Logiciel</option><option>Réseau</option><option>Identifiants/Accès</option></select></label>
         <label>Matériel concerné <select id="new-materiel"><option value="">-- Aucun --</option></select></label>
       </div>
-      <label style="margin-top: 0.5rem;">Titre court <input type="text" id="new-title" required></label>
-      <label>Description détaillée <textarea id="new-desc" rows="5" required></textarea></label>
-      <label>Capture d'écran (Optionnel - Max 2Mo) <input type="file" id="new-file" accept="image/png, image/jpeg, image/jpg"></label>
-      <button class="btn btn-primary" id="btn-create-ticket" style="margin-top: 0.5rem;">Soumettre la demande</button>
+      <label style="margin-top: 0.5rem;">Titre court <input type="text" id="new-title" placeholder="Ex. Impossible de me connecter" required></label>
+      <label>Description détaillée <textarea id="new-desc" rows="5" placeholder="Expliquez votre problème..." required></textarea></label>
+      <label>Joindre une capture d'écran (Optionnel - Max 2Mo) <input type="file" id="new-file" accept="image/png, image/jpeg, image/jpg"></label>
+      <button class="btn btn-primary" style="margin-top: 0.5rem;" onclick="createTicket()">Soumettre la demande</button>
     </div>
 
     <!-- VUE 3 : Profil -->
     <div id="view-profile" class="card hidden" style="max-width: 500px; margin: auto;">
       <h2 style="margin-bottom: 1.2rem; font-size: 1.2rem;">Fiche Adhérent</h2>
-      <div class="profile-field"><div class="profile-label">Nom complet</div><div class="profile-value" id="profile-nom"></div></div>
-      <div class="profile-field"><div class="profile-label">Organisation</div><div class="profile-value" id="profile-org"></div></div>
-      <div class="profile-field"><div class="profile-label">Adresse email</div><div class="profile-value" id="profile-email"></div></div>
+      <div style="margin-bottom: 1rem;"><div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Nom complet</div><div id="profile-nom" style="font-size: 1rem; font-weight: 500;"></div></div>
+      <div style="margin-bottom: 1rem;"><div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Organisation</div><div id="profile-org" style="font-size: 1rem; font-weight: 500;"></div></div>
+      <div style="margin-bottom: 1rem;"><div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Adresse email</div><div id="profile-email" style="font-size: 1rem; font-weight: 500;"></div></div>
     </div>
   </div>
 
-<script src="js/api.js?v=1"></script>
-  <script src="js/auth.js?v=1"></script>
-  <script src="js/ui.js?v=1"></script>
-  <script src="js/main.js?v=1"></script>
+  <script>
+    let userEmail = "", currentAdherent = null, selectedTicketId = null;
+    let allAdherents = [], allTickets = [], allEchanges = [], allMateriels = [];
+    let searchQuery = "", currentFilter = "Tous", currentSelectedRating = 0;
+
+    grist.ready({ requiredAccess: 'full' });
+
+    function formatGristData(data) {
+      if (!data) return [];
+      if (Array.isArray(data)) return data; 
+      if (data.id && Array.isArray(data.id)) {
+        return data.id.map((id, idx) => {
+          let row = {};
+          for (let key in data) row[key] = data[key][idx];
+          return row;
+        });
+      }
+      return [];
+    }
+
+    function formatDate(isoString) {
+      if (!isoString) return '';
+      const d = new Date(isoString);
+      return d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+    }
+
+    function showToast(message, type = "info") {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 4000);
+    }
+
+    async function init() {
+      try {
+        allAdherents = formatGristData(await grist.docApi.fetchTable('Adherents'));
+        const u = await grist.docApi.getUser();
+        let targetEmail = u && u.email ? u.email : localStorage.getItem('helpdesk_adherent_email') || "";
+        if (targetEmail) authenticateUser(targetEmail);
+        else document.getElementById('view-login').classList.remove('hidden');
+      } catch (err) { console.error(err); }
+    }
+
+    async function submitLogin() {
+      const emailInput = document.getElementById('login-email').value.trim().toLowerCase();
+      if (!emailInput) return;
+      allAdherents = formatGristData(await grist.docApi.fetchTable('Adherents'));
+      if (allAdherents.find(a => (a.Email || '').trim().toLowerCase() === emailInput)) {
+        document.getElementById('login-error-msg').style.display = 'none';
+        localStorage.setItem('helpdesk_adherent_email', emailInput);
+        authenticateUser(emailInput);
+        showToast("Connexion réussie", "success");
+      } else {
+        document.getElementById('login-error-msg').style.display = 'block';
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('helpdesk_adherent_email');
+      location.reload();
+    }
+
+    async function authenticateUser(email) {
+      userEmail = email;
+      currentAdherent = allAdherents.find(a => (a.Email || '').trim().toLowerCase() === email.toLowerCase());
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('app-content').classList.remove('hidden');
+
+      if (currentAdherent) {
+        const nom = currentAdherent.Nom || userEmail;
+        const org = currentAdherent['Organisation / Structure'] || currentAdherent.Organisation___Structure || '';
+        document.getElementById('user-header-text').textContent = org ? `${nom} (${org})` : nom;
+        document.getElementById('profile-nom').textContent = nom;
+        document.getElementById('profile-org').textContent = org || 'Non renseignée';
+        document.getElementById('profile-email').textContent = userEmail;
+      }
+      await loadData();
+    }
+
+    async function loadData() {
+      try {
+        const [rawT, rawE, rawM] = await Promise.all([
+          grist.docApi.fetchTable('Tickets'), grist.docApi.fetchTable('Echanges'), grist.docApi.fetchTable('Materiels').catch(()=>null)
+        ]);
+        allEchanges = formatGristData(rawE);
+        allMateriels = formatGristData(rawM);
+        allTickets = formatGristData(rawT).filter(t => currentAdherent && t.Demandeur === currentAdherent.id);
+        allTickets.sort((a, b) => new Date(b.Date_Creation || 0) - new Date(a.Date_Creation || 0));
+
+        populateMaterielDropdown();
+        renderTicketsList();
+        if (selectedTicketId) selectTicket(selectedTicketId);
+      } catch (err) { console.error(err); }
+    }
+
+    function populateMaterielDropdown() {
+      const s = document.getElementById('new-materiel');
+      s.innerHTML = '<option value="">-- Aucun --</option>';
+      if (currentAdherent) allMateriels.filter(m => m.Utilisateur === currentAdherent.id).forEach(m => {
+        s.innerHTML += `<option value="${m.id}">${m.Nom} (${m.Type || 'Matériel'})</option>`;
+      });
+    }
+
+    function handleSearch() { searchQuery = document.getElementById('search-input').value.trim().toLowerCase(); renderTicketsList(); }
+    function setFilter(f, btn) { currentFilter = f; document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active-filter')); btn.classList.add('active-filter'); renderTicketsList(); }
+
+    function renderTicketsList() {
+      const container = document.getElementById('tickets-list'); container.innerHTML = '';
+      let filtered = allTickets.filter(t => {
+        const status = t.Statut || 'Nouveau';
+        let matchF = currentFilter === 'Tous' || (currentFilter === 'Actifs' && ['Nouveau', 'En cours'].includes(status)) || (currentFilter === 'Clos' && ['Résolu', 'Clos'].includes(status));
+        let matchS = !searchQuery || (t.Titre || '').toLowerCase().includes(searchQuery);
+        return matchF && matchS;
+      });
+      
+      if (!filtered.length) return container.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">Aucun ticket correspondant.</p>';
+      
+      filtered.forEach(t => {
+        const d = document.createElement('div');
+        d.className = `ticket-card ${selectedTicketId === t.id ? 'selected' : ''}`;
+        d.innerHTML = `
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.35rem;">
+            <strong style="font-size: 0.95rem;">${t.Titre || 'Sans titre'}</strong>
+            <span class="badge badge-${(t.Statut||'Nouveau').replace(' ','-')}">${t.Statut||'Nouveau'}</span>
+          </div>
+          <small style="color:var(--text-muted);">${formatDate(t.Date_Creation)}</small>
+        `;
+        d.onclick = () => selectTicket(t.id);
+        container.appendChild(d);
+      });
+    }
+
+    function selectTicket(id) {
+      selectedTicketId = id; renderTicketsList();
+      const ticket = allTickets.find(t => t.id === id);
+      if (!ticket) return;
+
+      document.getElementById('no-selection').classList.add('hidden');
+      document.getElementById('selection-content').classList.remove('hidden');
+      document.getElementById('current-title').textContent = ticket.Titre;
+      document.getElementById('current-date').textContent = formatDate(ticket.Date_Creation);
+      
+      const descText = ticket.Description ? ticket.Description.replace(/\n/g, '<br>') : 'Aucun détail renseigné.';
+      const imgHtml = ticket.Image_Base64 ? `<div style="margin-top:1rem;"><a href="${ticket.Image_Base64}" target="_blank"><img src="${ticket.Image_Base64}" style="max-width:100%; max-height: 400px; border-radius:6px; border:1px solid var(--border);"></a></div>` : '';
+      document.getElementById('current-desc').innerHTML = descText + imgHtml;
+      
+      const matName = ticket.Materiel_Concerne ? (allMateriels.find(m => m.id === ticket.Materiel_Concerne)?.Nom || 'Lié') : 'Aucun';
+      document.getElementById('current-meta').innerHTML = `<span class="badge badge-gray">${ticket.Type || 'Non défini'}</span><span class="badge badge-gray">${ticket.Categorie || 'Général'}</span><span class="badge badge-gray">Priorité: ${ticket.Priorite || 'Normale'}</span><span class="badge badge-gray">Matériel: ${matName}</span>`;
+      
+      renderConversation(id);
+      updateActionBlocks(ticket);
+    }
+
+    function renderConversation(id) {
+      const tl = document.getElementById('timeline'); tl.innerHTML = '';
+      const echanges = allEchanges.filter(e => e.Ticket_ID === id);
+      echanges.sort((a, b) => new Date(a.Date || 0) - new Date(b.Date || 0));
+      
+      echanges.forEach(e => {
+        const isMine = e.Auteur_Email === userEmail;
+        const msgText = e.Message ? e.Message.replace(/\n/g, '<br>') : '';
+        tl.innerHTML += `<div class="message ${isMine ? 'mine' : 'support'}"><div class="meta">${isMine ? 'Moi' : 'Support'} • ${formatDate(e.Date)}</div><div>${msgText}</div></div>`;
+      });
+      tl.scrollTop = tl.scrollHeight;
+    }
+
+    function updateActionBlocks(ticket) {
+      const status = ticket.Statut || 'Nouveau';
+      document.getElementById('action-reply').classList.add('hidden');
+      document.getElementById('action-resolve').classList.add('hidden');
+      document.getElementById('action-satisfaction').classList.add('hidden');
+      document.getElementById('action-satisfaction-readonly').classList.add('hidden');
+
+      if (status === 'Résolu') {
+        document.getElementById('action-resolve').classList.remove('hidden');
+      } else if (status === 'Clos') {
+        if (!ticket.Note_Satisfaction) {
+          document.getElementById('action-satisfaction').classList.remove('hidden');
+          setRating(0); 
+        } else {
+          document.getElementById('action-satisfaction-readonly').classList.remove('hidden');
+          document.getElementById('readonly-stars').textContent = '★'.repeat(ticket.Note_Satisfaction) + '☆'.repeat(5 - ticket.Note_Satisfaction);
+          document.getElementById('readonly-comment').textContent = ticket.Commentaire_Satisfaction ? `"${ticket.Commentaire_Satisfaction}"` : "Aucun commentaire.";
+        }
+      } else {
+        document.getElementById('action-reply').classList.remove('hidden');
+      }
+    }
+
+    async function sendReply(overrideMsg = null) {
+      const text = overrideMsg || document.getElementById('reply-text').value.trim();
+      if (!text || !selectedTicketId) return;
+      await grist.docApi.applyUserActions([['AddRecord', 'Echanges', null, { Ticket_ID: selectedTicketId, Auteur_Email: userEmail, Message: text, Date: new Date().toISOString(), Est_Public: true }]]);
+      if(!overrideMsg) { document.getElementById('reply-text').value = ''; showToast("Message envoyé", "success"); }
+      await loadData();
+    }
+
+    async function acceptSolution() {
+      await grist.docApi.applyUserActions([['UpdateRecord', 'Tickets', selectedTicketId, { Statut: 'Clos' }]]);
+      await sendReply("✅ L'adhérent a validé la solution proposée.");
+      showToast("Ticket clôturé", "success");
+    }
+
+    async function rejectSolution() {
+      const reason = prompt("Veuillez expliquer pourquoi la solution ne convient pas :");
+      if (!reason) return;
+      await grist.docApi.applyUserActions([['UpdateRecord', 'Tickets', selectedTicketId, { Statut: 'En cours' }]]);
+      await sendReply(`❌ L'adhérent a refusé la solution. Motif : ${reason}`);
+      showToast("Ticket rouvert", "error");
+    }
+
+    function setRating(val) {
+      currentSelectedRating = val;
+      const stars = document.querySelectorAll('#star-container .star');
+      stars.forEach((s, idx) => { s.style.color = idx < val ? '#f59e0b' : '#cbd5e1'; });
+    }
+
+    async function submitSatisfaction() {
+      if (currentSelectedRating === 0) return showToast("Veuillez sélectionner une note.", "error");
+      const comment = document.getElementById('satisfaction-comment').value.trim();
+      await grist.docApi.applyUserActions([['UpdateRecord', 'Tickets', selectedTicketId, { Note_Satisfaction: currentSelectedRating, Commentaire_Satisfaction: comment }]]);
+      showToast("Merci pour votre avis !", "success");
+      await loadData();
+    }
+
+    async function createTicket() {
+      const title = document.getElementById('new-title').value.trim();
+      if (!title) return showToast("Veuillez saisir un titre.", "error");
+
+      const fileInput = document.getElementById('new-file');
+      let base64String = "";
+
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        if (file.size > 2000000) return showToast("L'image est trop lourde (Max 2 Mo).", "error");
+        try {
+          base64String = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+            reader.readAsDataURL(file);
+          });
+        } catch (e) { return showToast("Erreur lors de la lecture de l'image.", "error"); }
+      }
+
+      await grist.docApi.applyUserActions([['AddRecord', 'Tickets', null, {
+        Titre: title, Description: document.getElementById('new-desc').value.trim(), Statut: 'Nouveau', Demandeur: currentAdherent ? currentAdherent.id : null, 
+        Date_Creation: new Date().toISOString(), Type: document.getElementById('new-type').value, Categorie: document.getElementById('new-category').value, 
+        Priorite: document.getElementById('new-priority').value, Materiel_Concerne: document.getElementById('new-materiel').value ? parseInt(document.getElementById('new-materiel').value) : null,
+        Image_Base64: base64String
+      }]]);
+      
+      document.getElementById('new-title').value = ''; document.getElementById('new-desc').value = ''; document.getElementById('new-file').value = '';
+      showToast("Ticket créé avec succès", "success");
+      switchView('list'); await loadData();
+    }
+
+    function switchView(view) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-create').classList.add('hidden'); document.getElementById('view-profile').classList.add('hidden');
+      if (view === 'list') { document.querySelector('.tab-btn:nth-child(1)').classList.add('active'); document.getElementById('view-list').classList.remove('hidden'); }
+      else if (view === 'create') { document.querySelector('.tab-btn:nth-child(2)').classList.add('active'); document.getElementById('view-create').classList.remove('hidden'); }
+      else if (view === 'profile') { document.querySelector('.tab-btn:nth-child(3)').classList.add('active'); document.getElementById('view-profile').classList.remove('hidden'); }
+    }
+
+    let isInitialized = false; 
+    grist.onRecord(() => { if (!isInitialized) { isInitialized = true; init(); } });
+  </script>
 </body>
 </html>
